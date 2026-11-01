@@ -20,7 +20,7 @@
   /* ==========================================================================
      0. HELPERS & CONSTANTS
      ========================================================================== */
-  const APP = { name: 'Hearth & Home 3D', version: '1.0.0' };
+  const APP = { name: 'Hearth & Home 3D', version: '1.1.0' };
   const STORAGE_KEY = 'hearthHome3D.v1';
   const RING_CIRCUMFERENCE = 2 * Math.PI * 86;
   const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -99,10 +99,40 @@
     breakMinutes: 5,
     autoStartBreak: true,
     minimal: false,
-    soundOn: false
+    soundOn: true,
+    soundSchema: 2
   };
 
-  const settings = Object.assign({}, DEFAULT_SETTINGS);
+  const LAYER_KEYS = ['fire', 'room', 'ocean', 'wind', 'rain'];
+  const DEFAULT_LAYERS = {
+    fireplace: { fire: true, room: true, ocean: false, wind: false, rain: false },
+    ocean: { fire: false, room: false, ocean: true, wind: true, rain: false },
+    sky: { fire: false, room: false, ocean: false, wind: true, rain: false }
+  };
+
+  function cloneLayers(src) {
+    const out = {};
+    ['fireplace', 'ocean', 'sky'].forEach((scene) => {
+      out[scene] = {};
+      LAYER_KEYS.forEach((key) => { out[scene][key] = !!(src[scene] && src[scene][key]); });
+    });
+    return out;
+  }
+
+  function normalizeLayers(raw) {
+    const out = cloneLayers(DEFAULT_LAYERS);
+    if (!raw || typeof raw !== 'object') return out;
+    ['fireplace', 'ocean', 'sky'].forEach((scene) => {
+      if (raw[scene] && typeof raw[scene] === 'object') {
+        LAYER_KEYS.forEach((key) => {
+          if (typeof raw[scene][key] === 'boolean') out[scene][key] = raw[scene][key];
+        });
+      }
+    });
+    return out;
+  }
+
+  const settings = Object.assign({}, DEFAULT_SETTINGS, { layers: cloneLayers(DEFAULT_LAYERS) });
   const profile = {
     totalFocusSeconds: 0,
     sessionsCompleted: 0,
@@ -133,6 +163,10 @@
         settings.breakMinutes = safeNumber(src.breakMinutes, settings.breakMinutes, 1, 45);
         settings.autoStartBreak = src.autoStartBreak !== false;
         settings.minimal = !!src.minimal;
+        const soundPrefsUpgraded = !src.soundSchema || Number(src.soundSchema) < 2;
+        settings.soundOn = soundPrefsUpgraded ? true : src.soundOn !== false;
+        settings.soundSchema = 2;
+        if (src.layers) settings.layers = normalizeLayers(src.layers);
       }
       if (data && data.profile) {
         const p = data.profile;
@@ -2346,7 +2380,8 @@
     settings.scene = name;
     persistSoon();
     updateSceneUI(name);
-    if (sound.started) sound.setScene(name);
+    updateLayerUI(name);
+    sound.setScene(name);
 
     if (switchTimeout) clearTimeout(switchTimeout);
     const overlay = $('#scene-fade');
@@ -2411,14 +2446,15 @@
     this.ctx = null;
     this.started = false;
     this.enabled = false;
-    this.scene = 'fireplace';
+    this.scene = settings.scene || 'fireplace';
     this.master = null;
     this.comp = null;
     this.fireBus = null;
     this.ambBus = null;
-    this.sceneGains = {};
+    this.layerGains = {};
     this.crackleTimer = null;
     this.oceanTimer = null;
+    this.rainTimer = null;
     this.pinkBuffer = null;
     this.whiteBuffer = null;
     this.brownBuffer = null;
@@ -2426,6 +2462,10 @@
     this.ambVolume = settings.ambienceVolume;
     this.masterVolume = settings.masterVolume;
   }
+
+  SoundEngine.prototype.activeLayers = function () {
+    return settings.layers[this.scene] || DEFAULT_LAYERS[this.scene] || DEFAULT_LAYERS.fireplace;
+  };
 
   SoundEngine.prototype.makeNoise = function (kind, seconds) {
     const ctx = this.ctx;
@@ -2555,17 +2595,21 @@
         fireLfo.start();
 
         // ---- ambience buses ----
-        self.sceneGains.room = ctx.createGain();
-        self.sceneGains.room.gain.value = 0;
-        self.sceneGains.room.connect(self.ambBus);
+        self.layerGains.room = ctx.createGain();
+        self.layerGains.room.gain.value = 0;
+        self.layerGains.room.connect(self.ambBus);
 
-        self.sceneGains.ocean = ctx.createGain();
-        self.sceneGains.ocean.gain.value = 0;
-        self.sceneGains.ocean.connect(self.ambBus);
+        self.layerGains.ocean = ctx.createGain();
+        self.layerGains.ocean.gain.value = 0;
+        self.layerGains.ocean.connect(self.ambBus);
 
-        self.sceneGains.wind = ctx.createGain();
-        self.sceneGains.wind.gain.value = 0;
-        self.sceneGains.wind.connect(self.ambBus);
+        self.layerGains.wind = ctx.createGain();
+        self.layerGains.wind.gain.value = 0;
+        self.layerGains.wind.connect(self.ambBus);
+
+        self.layerGains.rain = ctx.createGain();
+        self.layerGains.rain.gain.value = 0;
+        self.layerGains.rain.connect(self.ambBus);
 
         // room tone
         const roomSrc = ctx.createBufferSource();
@@ -2576,7 +2620,7 @@
         roomFilter.frequency.value = 130;
         const roomGain = ctx.createGain();
         roomGain.gain.value = 0.32;
-        roomSrc.connect(roomFilter).connect(roomGain).connect(self.sceneGains.room);
+        roomSrc.connect(roomFilter).connect(roomGain).connect(self.layerGains.room);
         roomSrc.start();
 
         // ocean swell
@@ -2589,7 +2633,7 @@
         oceanFilter.Q.value = 0.9;
         const oceanGain = ctx.createGain();
         oceanGain.gain.value = 0.26;
-        oceanSrc.connect(oceanFilter).connect(oceanGain).connect(self.sceneGains.ocean);
+        oceanSrc.connect(oceanFilter).connect(oceanGain).connect(self.layerGains.ocean);
         oceanSrc.start();
         const swell = ctx.createOscillator();
         swell.type = 'sine';
@@ -2608,7 +2652,7 @@
         hissFilter.Q.value = 0.5;
         const hissGain = ctx.createGain();
         hissGain.gain.value = 0.035;
-        hissSrc.connect(hissFilter).connect(hissGain).connect(self.sceneGains.ocean);
+        hissSrc.connect(hissFilter).connect(hissGain).connect(self.layerGains.ocean);
         hissSrc.start();
 
         // wind
@@ -2621,7 +2665,7 @@
         windFilter.Q.value = 0.55;
         const windGain = ctx.createGain();
         windGain.gain.value = 0.3;
-        windSrc.connect(windFilter).connect(windGain).connect(self.sceneGains.wind);
+        windSrc.connect(windFilter).connect(windGain).connect(self.layerGains.wind);
         windSrc.start();
         const gust = ctx.createOscillator();
         gust.type = 'sine';
@@ -2640,17 +2684,50 @@
         whistleFilter.Q.value = 3.2;
         const whistleGain = ctx.createGain();
         whistleGain.gain.value = 0.018;
-        whistleSrc.connect(whistleFilter).connect(whistleGain).connect(self.sceneGains.wind);
+        whistleSrc.connect(whistleFilter).connect(whistleGain).connect(self.layerGains.wind);
         whistleSrc.start();
+
+        // rain — soft high hiss + a low body + sparse droplets
+        const rainSrc = ctx.createBufferSource();
+        rainSrc.buffer = self.whiteBuffer;
+        rainSrc.loop = true;
+        const rainHigh = ctx.createBiquadFilter();
+        rainHigh.type = 'highpass';
+        rainHigh.frequency.value = 900;
+        const rainLow = ctx.createBiquadFilter();
+        rainLow.type = 'lowpass';
+        rainLow.frequency.value = 7800;
+        const rainGain = ctx.createGain();
+        rainGain.gain.value = 0.18;
+        rainSrc.connect(rainHigh).connect(rainLow).connect(rainGain).connect(self.layerGains.rain);
+        rainSrc.start();
+
+        const rainBody = ctx.createBufferSource();
+        rainBody.buffer = self.pinkBuffer;
+        rainBody.loop = true;
+        const rainBodyFilter = ctx.createBiquadFilter();
+        rainBodyFilter.type = 'lowpass';
+        rainBodyFilter.frequency.value = 1100;
+        const rainBodyGain = ctx.createGain();
+        rainBodyGain.gain.value = 0.1;
+        rainBody.connect(rainBodyFilter).connect(rainBodyGain).connect(self.layerGains.rain);
+        rainBody.start();
+
+        const rainLfo = ctx.createOscillator();
+        rainLfo.type = 'sine';
+        rainLfo.frequency.value = 0.06;
+        const rainLfoGain = ctx.createGain();
+        rainLfoGain.gain.value = 0.04;
+        rainLfo.connect(rainLfoGain).connect(rainGain.gain);
+        rainLfo.start();
 
         self.started = true;
         self.enabled = true;
         self.setScene(self.scene, true);
         self.applyVolumes(true);
         self.master.gain.setTargetAtTime(self.masterVolume, ctx.currentTime, 0.6);
-        self.scheduleCrackles();
-        self.scheduleOcean();
-        if (ctx.state === 'suspended') ctx.resume();
+        self.syncSchedulers();
+        if (ctx.state === 'suspended' || ctx.state === 'interrupted') ctx.resume().catch(() => {});
         resolve(true);
       } catch (err) {
         try { if (self.ctx && self.ctx.close) self.ctx.close(); } catch (e) {}
@@ -2661,25 +2738,30 @@
     });
   };
 
+  SoundEngine.prototype.applyLayers = function (ramp) {
+    if (!this.ctx) return;
+    const layers = this.activeLayers();
+    const now = this.ctx.currentTime;
+    const time = typeof ramp === 'number' ? ramp : 0.9;
+    ['room', 'ocean', 'wind', 'rain'].forEach((key) => {
+      this.layerGains[key].gain.setTargetAtTime(layers[key] ? 1 : 0, now, time);
+    });
+    this.fireBus.gain.setTargetAtTime(layers.fire ? this.fireVolume : 0, now, time);
+  };
+
   SoundEngine.prototype.setScene = function (name, instant) {
     this.scene = name;
     if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const ramp = instant ? 0.05 : 0.9;
-    this.sceneGains.room.gain.setTargetAtTime(name === 'fireplace' ? 1 : 0, now, ramp);
-    this.sceneGains.ocean.gain.setTargetAtTime(name === 'ocean' ? 1 : 0, now, ramp);
-    this.sceneGains.wind.gain.setTargetAtTime(name === 'sky' ? 1 : 0, now, ramp);
-    this.fireBus.gain.setTargetAtTime(name === 'fireplace' ? this.fireVolume : 0, now, ramp);
-    if (name === 'fireplace') this.scheduleCrackles();
-    else {
-      clearTimeout(this.crackleTimer);
-      this.crackleTimer = null;
-    }
-    if (name === 'ocean') this.scheduleOcean();
-    else {
-      clearTimeout(this.oceanTimer);
-      this.oceanTimer = null;
-    }
+    this.applyLayers(instant ? 0.05 : 0.9);
+    this.syncSchedulers();
+  };
+
+  SoundEngine.prototype.setLayer = function (layer, on) {
+    const layers = settings.layers[this.scene];
+    if (!layers || !(layer in layers)) return;
+    layers[layer] = !!on;
+    this.applyLayers(0.22);
+    this.syncSchedulers();
   };
 
   SoundEngine.prototype.applyVolumes = function (instant) {
@@ -2688,10 +2770,10 @@
     this.masterVolume = clamp(settings.masterVolume, 0, 1);
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
-    const ramp = instant ? 0.03 : 0.16;
+    const ramp = instant ? 0.03 : 0.12;
     this.master.gain.setTargetAtTime(this.enabled ? this.masterVolume : 0, now, ramp);
     this.ambBus.gain.setTargetAtTime(this.ambVolume, now, ramp);
-    this.fireBus.gain.setTargetAtTime(this.scene === 'fireplace' ? this.fireVolume : 0, now, ramp);
+    this.applyLayers(ramp);
   };
 
   SoundEngine.prototype.setEnabled = function (on) {
@@ -2699,7 +2781,28 @@
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
     this.master.gain.setTargetAtTime(this.enabled ? this.masterVolume : 0, now, 0.15);
-    if (this.enabled && this.ctx.state === 'suspended') this.ctx.resume();
+    if (this.enabled && (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted')) {
+      this.ctx.resume().catch(() => {});
+    }
+  };
+
+  SoundEngine.prototype.syncSchedulers = function () {
+    const layers = this.activeLayers();
+    if (layers.fire) this.scheduleCrackles();
+    else {
+      clearTimeout(this.crackleTimer);
+      this.crackleTimer = null;
+    }
+    if (layers.ocean) this.scheduleOcean();
+    else {
+      clearTimeout(this.oceanTimer);
+      this.oceanTimer = null;
+    }
+    if (layers.rain) this.scheduleRain();
+    else {
+      clearTimeout(this.rainTimer);
+      this.rainTimer = null;
+    }
   };
 
   SoundEngine.prototype.scheduleCrackles = function () {
@@ -2710,7 +2813,7 @@
     function loop() {
       self.crackleTimer = setTimeout(() => {
         if (!self.started) return;
-        if (self.scene === 'fireplace') {
+        if (self.activeLayers().fire) {
           self.playCrackle();
           next = rand(70, 620);
         } else {
@@ -2723,7 +2826,7 @@
   };
 
   SoundEngine.prototype.playCrackle = function () {
-    if (!this.ctx || this.ctx.state !== 'running') return;
+    if (!this.ctx || this.ctx.state !== 'running' || !this.activeLayers().fire) return;
     const ctx = this.ctx;
     const now = ctx.currentTime;
     const src = ctx.createBufferSource();
@@ -2772,7 +2875,7 @@
     function loop() {
       self.oceanTimer = setTimeout(() => {
         if (!self.started) return;
-        if (self.scene === 'ocean') self.playWave();
+        if (self.activeLayers().ocean) self.playWave();
         loop();
       }, rand(6200, 12500));
     }
@@ -2780,7 +2883,7 @@
   };
 
   SoundEngine.prototype.playWave = function () {
-    if (!this.ctx || this.ctx.state !== 'running' || this.scene !== 'ocean') return;
+    if (!this.ctx || this.ctx.state !== 'running' || !this.activeLayers().ocean) return;
     const ctx = this.ctx;
     const now = ctx.currentTime;
     const src = ctx.createBufferSource();
@@ -2793,8 +2896,48 @@
     gain.gain.setValueAtTime(0.0001, now);
     gain.gain.exponentialRampToValueAtTime(rand(0.16, 0.3), now + 1.1);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + 4.2);
-    src.connect(filter).connect(gain).connect(this.sceneGains.ocean);
+    src.connect(filter).connect(gain).connect(this.layerGains.ocean);
     src.start(now, rand(0, 3), 4.4);
+  };
+
+  SoundEngine.prototype.scheduleRain = function () {
+    const self = this;
+    clearTimeout(this.rainTimer);
+    if (!this.started) return;
+    function loop() {
+      self.rainTimer = setTimeout(() => {
+        if (!self.started) return;
+        if (self.activeLayers().rain) self.playRainDrop();
+        loop();
+      }, rand(55, 280));
+    }
+    loop();
+  };
+
+  SoundEngine.prototype.playRainDrop = function () {
+    if (!this.ctx || this.ctx.state !== 'running' || !this.activeLayers().rain) return;
+    const ctx = this.ctx;
+    const now = ctx.currentTime;
+    const src = ctx.createBufferSource();
+    src.buffer = this.crackleBuffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = rand(1600, 5200);
+    const gain = ctx.createGain();
+    const duration = rand(0.015, 0.055);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(rand(0.015, 0.07), now + 0.002);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    src.connect(filter).connect(gain);
+    let tail = gain;
+    if (ctx.createStereoPanner) {
+      const panner = ctx.createStereoPanner();
+      panner.pan.value = rand(-0.85, 0.85);
+      gain.connect(panner);
+      tail = panner;
+    }
+    tail.connect(this.layerGains.rain);
+    src.start(now, rand(0, 0.25), duration + 0.01);
   };
 
   SoundEngine.prototype.chime = function (focusDone) {
@@ -3165,43 +3308,146 @@
   function updateSoundUI() {
     const enabled = sound.enabled;
     const started = sound.started;
-    const label = enabled ? 'Sound On' : (started ? 'Sound Off' : 'Enable Sound');
-    const icon = enabled ? '🔊' : (started ? '🔇' : '🔈');
+    const running = !!(started && sound.ctx && sound.ctx.state === 'running');
+    const pending = !!(enabled && started && !running);
+    const mutedPref = settings.soundOn === false;
+    const label = !enabled ? ((started || mutedPref) ? 'Sound Off' : 'Enable Sound') : (pending ? 'Tap to hear' : 'Sound On');
+    const icon = !enabled ? ((started || mutedPref) ? '🔇' : '🔈') : (pending ? '🔈' : '🔊');
+
     const toggle = $('#sound-toggle');
-    toggle.classList.toggle('is-on', enabled);
+    toggle.classList.toggle('is-on', enabled && running);
+    toggle.classList.toggle('is-pending', pending);
     toggle.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-    toggle.title = enabled ? 'Mute ambient sound' : 'Enable ambient sound';
+    toggle.title = pending ? 'Tap anywhere to start the soundscape' : (enabled ? 'Mute ambient sound' : 'Enable ambient sound');
     $('.sound-icon', toggle).textContent = icon;
     $('.sound-label', toggle).textContent = label;
 
     const power = $('#audio-power');
-    power.textContent = enabled ? 'on' : (started ? 'muted' : 'off');
-    power.classList.toggle('is-on', enabled);
+    power.textContent = running ? 'on' : (pending ? 'tap' : (started ? 'muted' : 'off'));
+    power.classList.toggle('is-on', enabled && running);
+    power.classList.toggle('is-pending', pending);
     power.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+    power.title = pending ? 'Tap anywhere to start the soundscape' : 'Toggle sound';
 
     const mini = $('#mini-sound');
-    mini.textContent = enabled ? '🔊' : (started ? '🔇' : '🔈');
-    mini.classList.toggle('is-on', enabled);
+    mini.textContent = icon;
+    mini.classList.toggle('is-on', enabled && running);
+    mini.classList.toggle('is-pending', pending);
+  }
+
+  function updateLayerUI(scene) {
+    const current = scene || settings.scene;
+    const layers = settings.layers[current] || DEFAULT_LAYERS[current] || DEFAULT_LAYERS.fireplace;
+    $$('.layer-chip').forEach((btn) => {
+      const on = !!layers[btn.dataset.layer];
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    const defaults = DEFAULT_LAYERS[current] || DEFAULT_LAYERS.fireplace;
+    const custom = LAYER_KEYS.some((key) => !!layers[key] !== !!defaults[key]);
+    const activeCount = LAYER_KEYS.filter((key) => layers[key]).length;
+    const names = { fireplace: 'Fireplace mix', ocean: 'Ocean mix', sky: 'Sky mix' };
+    $('#layer-mix').textContent = activeCount === 0 ? 'Silent mix' : (custom ? 'Custom mix' : names[current]);
+    const fireRow = $('#fire-volume').closest('.slider-row');
+    const ambRow = $('#ambience-volume').closest('.slider-row');
+    fireRow.classList.toggle('is-muted', !layers.fire);
+    const anyAmbience = ['room', 'ocean', 'wind', 'rain'].some((key) => layers[key]);
+    ambRow.classList.toggle('is-muted', !anyAmbience);
+  }
+
+  async function enableSound(opts) {
+    opts = opts || {};
+    try {
+      if (!sound.started) {
+        await sound.start();
+        if (sound.ctx) sound.ctx.onstatechange = updateSoundUI;
+      }
+      sound.setEnabled(true);
+      settings.soundOn = true;
+      if (sound.ctx && (sound.ctx.state === 'suspended' || sound.ctx.state === 'interrupted')) {
+        sound.ctx.onstatechange = updateSoundUI;
+        sound.ctx.resume().catch(() => {});
+      }
+      updateSoundUI();
+      updateLayerUI();
+      persistNow();
+      if (opts.toast) toast('The hearth is crackling', { icon: '🔥' });
+      return true;
+    } catch (err) {
+      updateSoundUI();
+      if (!opts.silent) toast('Could not start audio: ' + err.message, { icon: '⚠️', tone: 'error' });
+      return false;
+    }
   }
 
   async function toggleSound() {
     if (!sound.started) {
-      try {
-        await sound.start();
-        settings.soundOn = true;
-        updateSoundUI();
-        persistSoon();
-        toast('The hearth is crackling', { icon: '🔥' });
-      } catch (err) {
-        updateSoundUI();
-        toast('Could not start audio: ' + err.message, { icon: '⚠️', tone: 'error' });
-      }
-    } else {
-      sound.setEnabled(!sound.enabled);
-      settings.soundOn = sound.enabled;
+      await enableSound({ toast: true });
+      return;
+    }
+    if (sound.enabled && sound.ctx && (sound.ctx.state === 'suspended' || sound.ctx.state === 'interrupted')) {
+      sound.ctx.onstatechange = updateSoundUI;
+      sound.ctx.resume().catch(() => {});
       updateSoundUI();
-      persistSoon();
-      toast(sound.enabled ? 'Sound on' : 'Sound muted', { icon: sound.enabled ? '🔊' : '🔇' });
+      setTimeout(() => {
+        if (sound.ctx && sound.ctx.state === 'running') toast('Sound is live', { icon: '🔊' });
+      }, 180);
+      return;
+    }
+    sound.setEnabled(!sound.enabled);
+    settings.soundOn = sound.enabled;
+    updateSoundUI();
+    persistNow();
+    toast(sound.enabled ? 'Sound on' : 'Sound muted', { icon: sound.enabled ? '🔊' : '🔇' });
+  }
+
+  async function toggleLayer(layer) {
+    const layers = settings.layers[settings.scene];
+    if (!layers || !(layer in layers)) return;
+    const next = !layers[layer];
+    if (sound.started) sound.setLayer(layer, next);
+    else layers[layer] = next;
+    updateLayerUI();
+    persistNow();
+    if (next && (!sound.started || !sound.enabled || (sound.ctx && sound.ctx.state === 'suspended'))) {
+      await enableSound({ silent: true });
+      updateLayerUI();
+    }
+  }
+
+  let autoSoundStarted = false;
+  async function autoStartSound() {
+    if (autoSoundStarted) return;
+    autoSoundStarted = true;
+    if (settings.soundOn === false) {
+      updateSoundUI();
+      return;
+    }
+    const ok = await enableSound({ silent: true });
+    if (!ok) {
+      autoSoundStarted = false;
+      return;
+    }
+    updateSoundUI();
+    setTimeout(() => {
+      if (settings.soundOn && sound.ctx && (sound.ctx.state === 'suspended' || sound.ctx.state === 'interrupted')) {
+        toast('Sound is ready — tap anywhere to hear it', { icon: '🔈', duration: 5200 });
+      }
+    }, 2200);
+  }
+
+  function wakeSound(event) {
+    if (settings.soundOn === false) return;
+    const target = event && event.target;
+    if (target && target.closest && target.closest('#sound-toggle, #audio-power, #mini-sound')) return;
+    if (event && event.type === 'keydown' && (event.key === 'm' || event.key === 'M')) return;
+    if (!sound.started) {
+      autoStartSound();
+      return;
+    }
+    if (!sound.enabled) return;
+    if (sound.ctx && (sound.ctx.state === 'suspended' || sound.ctx.state === 'interrupted')) {
+      sound.ctx.resume().then(updateSoundUI).catch(() => {});
     }
   }
 
@@ -3247,7 +3493,8 @@
         masterVolume: settings.masterVolume,
         focusMinutes: settings.focusMinutes,
         breakMinutes: settings.breakMinutes,
-        autoStartBreak: settings.autoStartBreak
+        autoStartBreak: settings.autoStartBreak,
+        layers: settings.layers
       },
       note: 'Generated by Hearth & Home 3D — a cozy fireplace & study sanctuary.'
     };
@@ -3306,11 +3553,13 @@
       if (isFinite(s.focusMinutes)) settings.focusMinutes = clamp(s.focusMinutes, 1, 120);
       if (isFinite(s.breakMinutes)) settings.breakMinutes = clamp(s.breakMinutes, 1, 45);
       if (typeof s.autoStartBreak === 'boolean') settings.autoStartBreak = s.autoStartBreak;
+      if (s.layers) settings.layers = normalizeLayers(s.layers);
     }
 
     updateStats();
     syncSettingsToUI();
     updateVolumeUI();
+    updateLayerUI();
     if (sound.started) {
       sound.applyVolumes();
       sound.setScene(settings.scene);
@@ -3325,6 +3574,7 @@
     $('#focus-minutes').value = settings.focusMinutes;
     $('#break-minutes').value = settings.breakMinutes;
     updateSceneUI(settings.scene);
+    updateLayerUI(settings.scene);
   }
 
   function bindUI() {
@@ -3336,6 +3586,9 @@
     // sound
     $('#sound-toggle').addEventListener('click', toggleSound);
     $('#audio-power').addEventListener('click', toggleSound);
+    $$('.layer-chip').forEach((btn) => {
+      btn.addEventListener('click', () => toggleLayer(btn.dataset.layer));
+    });
 
     // minimal / focus mode
     $('#ui-toggle').addEventListener('click', () => toggleMinimal());
@@ -3416,13 +3669,9 @@
     });
 
     // Some browsers open the AudioContext suspended until a real gesture.
-    const resumeAudio = () => {
-      if (sound.started && sound.ctx && sound.ctx.state === 'suspended') {
-        sound.ctx.resume().catch(() => {});
-      }
-    };
-    document.addEventListener('pointerdown', resumeAudio, { passive: true });
-    document.addEventListener('keydown', resumeAudio, { passive: true });
+    document.addEventListener('pointerdown', wakeSound, { passive: true });
+    document.addEventListener('keydown', wakeSound, { passive: true });
+    document.addEventListener('touchstart', wakeSound, { passive: true });
 
     window.addEventListener('beforeunload', () => {
       if (timer.running) persistNow();
@@ -3469,23 +3718,23 @@
     updateStats();
     syncSettingsToUI();
     updateSoundUI();
+    updateLayerUI(settings.scene);
     initQuotes();
     updateSceneUI(settings.scene || 'fireplace');
 
     try {
       initThree();
       setTimeout(hideLoader, REDUCED_MOTION ? 250 : 700);
-      setTimeout(() => {
-        if (!sound.started) {
-          toast('Click “Enable Sound” for the crackling hearth', { icon: '🔈', duration: 6200 });
-        }
-      }, 2800);
     } catch (err) {
       console.error('[hearth] 3D init failed:', err);
       $('#loader-sub').textContent = 'The fire could not be lit — ' + err.message;
       setTimeout(hideLoader, 2600);
       toast('3D scene unavailable: ' + err.message, { icon: '⚠️', tone: 'error', duration: 7000 });
     }
+
+    // Sound is enabled by default. If the browser requires a gesture, the
+    // context stays suspended and wakes on the first pointer/key event.
+    setTimeout(autoStartSound, 650);
 
     // If the timer was running from a previous visit, make sure the ticker is alive.
     if (timer.running) startTicker();
@@ -3507,6 +3756,9 @@
     sound: sound,
     switchScene: switchScene,
     toggleMinimal: toggleMinimal,
+    toggleLayer: toggleLayer,
+    enableSound: enableSound,
+    updateSoundUI: updateSoundUI,
     get scene() { return activeSceneName; },
     get world() { return activeWorld; },
     get worlds() { return WORLDS; },

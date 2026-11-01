@@ -6,7 +6,7 @@
 
 **Cozy Fireplace & Study Sanctuary**
 
-A hand-built stone fireplace, a living particle fire, a synthesized crackling hearth, and a Pomodoro ritual in three cozy environments.
+A hand-built stone fireplace, a living particle fire, a five-layer synthesized soundscape that starts on its own, and a Pomodoro ritual in three cozy environments.
 
 [![Live demo](https://img.shields.io/badge/live_demo-online-fb923c?style=flat-square)](https://somphol.github.io/hearth-and-home-3d/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-fb923c?style=flat-square)](LICENSE)
@@ -40,14 +40,17 @@ Switch environments at any time without reloading. Each one brings its own sound
 
 ### Sound, synthesized live
 No audio files are downloaded. The Web Audio API builds everything in the browser:
+- **On by default** — the fireplace mix rises automatically. If the browser blocks autoplay, it shows **Tap to hear** and wakes on your first touch.
+- **Five mixable layers** — Fire crackle, Room tone, Ocean waves, Wind, and Rain. Toggle any combination on or off.
+- **Per-scene mixes** — each environment remembers its own layer selection; the three volume sliders are shared.
 - Filtered pink/brown noise for the steady burn of the fire.
-- Random high-frequency impulses with stereo panning for wood pops and crackles.
+- Random high-frequency impulses with stereo panning for wood pops, crackles, and rain patter.
 - A low sine/triangle hearth rumble and a slow-breathing fire bed.
-- Separate room-tone, ocean-swell, and wind layers that crossfade with the scene.
+- Separate room, ocean-swell, wind, and rain layers that crossfade with the scene.
 - A gentle synthesized chime when a focus block finishes.
-- Independent Crackle / Ambience / Master volume sliders.
+- **Crackle / Ambience / Master volume sliders** for full control of the mix.
 
-Audio starts only after you click **Enable Sound**, respecting browser autoplay rules.
+The audio graph is created with the page, but browsers may hold it suspended until a real user gesture. The UI reports **Sound On** when audible, **Tap to hear** when waiting for that gesture, and **Sound Off** after you mute it.
 
 ### Pomodoro ritual
 - 25/5 minute focus and break blocks, fully adjustable (1–120 focus, 1–45 break).
@@ -58,7 +61,7 @@ Audio starts only after you click **Enable Sound**, respecting browser autoplay 
 - Completion chime, title-bar countdown, and a compact minimal HUD.
 
 ### Persistence & portable logs
-- Statistics, settings, volumes, and the active scene are stored in `localStorage`.
+- Statistics, settings, volumes, sound-layer mixes, and the active scene are stored in `localStorage`.
 - **💾 Save Study Session** downloads `fireplace_sanctuary_log.json`.
 - **📂 Load Session Log** merges focus sessions from another device, deduplicating by session id.
 - Everything stays local — there is no backend, account, or tracking.
@@ -88,6 +91,8 @@ Internet access is required for the Three.js CDN scripts and Google Fonts. The U
 | `M` | Toggle sound |
 | `R` | Reset the current timer |
 | `Esc` | Leave distraction-free mode |
+| Layer chips | Pick any mix of Fire, Room, Waves, Wind, and Rain |
+| Volume sliders | Crackle, Ambience, and Master levels |
 
 The public API is also exposed for tinkering in the console:
 
@@ -96,12 +101,15 @@ HearthHome3D.scene            // "fireplace" | "ocean" | "sky"
 HearthHome3D.timer            // current Pomodoro state
 HearthHome3D.switchScene("sky")
 HearthHome3D.toggleMinimal()
+HearthHome3D.toggleLayer("rain")
 ```
 
 ## Project structure
 
 ```
 hearth-and-home-3d/
+├── .github/                   # issue and pull-request templates
+├── docs/social-card.png       # 1200 × 630 social preview
 ├── index.html                 # semantic UI, panels, SVG ring, loaders
 ├── style.css                  # warm cabin glassmorphism design system
 ├── script.js                  # Three.js worlds, particles, audio, timer, storage
@@ -109,8 +117,13 @@ hearth-and-home-3d/
 ├── preview-ocean.jpg
 ├── preview-sky.jpg
 ├── SESSION_STATE.json         # build telemetry for this project
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── CODE_OF_CONDUCT.md
+├── SECURITY.md
+├── THIRD_PARTY_NOTICES.md
 ├── LICENSE
-└── THIRD_PARTY_NOTICES.md
+└── README.md
 ```
 
 ## Study log format
@@ -118,7 +131,7 @@ hearth-and-home-3d/
 ```json
 {
   "app": "Hearth & Home 3D",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "exportedAt": "2026-11-01T00:00:00.000Z",
   "profile": {
     "totalFocusSeconds": 9000,
@@ -141,7 +154,12 @@ hearth-and-home-3d/
     "masterVolume": 0.8,
     "focusMinutes": 25,
     "breakMinutes": 5,
-    "autoStartBreak": true
+    "autoStartBreak": true,
+    "layers": {
+      "fireplace": { "fire": true, "room": true, "ocean": false, "wind": false, "rain": false },
+      "ocean": { "fire": false, "room": false, "ocean": true, "wind": true, "rain": false },
+      "sky": { "fire": false, "room": false, "ocean": false, "wind": true, "rain": false }
+    }
   }
 }
 ```
@@ -150,18 +168,20 @@ Imports are validated and merged by session id, so re-importing the same log nev
 
 ## Build telemetry
 
-Measured from the OpenCode session database when the app was feature-complete:
+Measured from the OpenCode session database. Active time is estimated from message timestamps with long idle gaps capped at five minutes.
 
 | Metric | Value |
 | --- | --- |
-| Build time | **33m 13s** (1,993 s) |
+| Initial build (v1.0.0) | **33m 13s** |
+| Active time through v1.1.0 | **1h 7m 4s** |
+| Wall clock since session start | 15h 36m 56s (includes a 14.6-hour overnight gap) |
 | Model | **DeepSeek V4.1 Flash** (`opencode-go/deepseek-v4.1-flash`) |
 | Harness | OpenCode 2.2.5 |
-| Non-cached tokens | **569,993** (input + cache write + output + reasoning) |
-| Total tokens processed | **25,979,913** (includes 25,409,920 cache reads) |
-| Measured at | 2026-11-01T08:09:25.465000Z |
+| Non-cached tokens | **1,108,043** (input + cache write + output + reasoning) |
+| Total tokens processed | **70,594,123** (includes 69,486,080 cache reads) |
+| Measured at | 2026-11-01T23:13:07.497000Z |
 
-The full machine-readable record — including the raw session fields, per-file deliverable sizes, and credits — is in [SESSION_STATE.json](SESSION_STATE.json). Cache reads are replayed context and are shown separately from fresh work. The final git commit and upload happen after this snapshot, so they add a small amount of usage.
+The full machine-readable record — including the initial build snapshot, raw session fields, per-file deliverable sizes, and credits — is in [SESSION_STATE.json](SESSION_STATE.json). Cache reads are replayed context and are shown separately from fresh work. Final publishing steps after this snapshot add a small amount of usage.
 
 ## Credits
 

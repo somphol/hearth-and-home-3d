@@ -170,6 +170,20 @@
           <button class="mini-sound" id="audio-power" type="button" aria-pressed="false" title="Toggle sound">off</button>
         </div>
 
+        <div class="layer-picker">
+          <div class="layer-head">
+            <span class="layer-title">Layers</span>
+            <span class="layer-mix" id="layer-mix">Fireplace mix</span>
+          </div>
+          <div class="layer-chips" role="group" aria-label="Choose which sounds play">
+            <button class="layer-chip is-on" data-layer="fire" type="button" aria-pressed="true"><span aria-hidden="true">🔥</span>Fire</button>
+            <button class="layer-chip" data-layer="room" type="button" aria-pressed="false"><span aria-hidden="true">🕯️</span>Room</button>
+            <button class="layer-chip" data-layer="ocean" type="button" aria-pressed="false"><span aria-hidden="true">🌊</span>Waves</button>
+            <button class="layer-chip" data-layer="wind" type="button" aria-pressed="false"><span aria-hidden="true">🌬️</span>Wind</button>
+            <button class="layer-chip" data-layer="rain" type="button" aria-pressed="false"><span aria-hidden="true">🌧️</span>Rain</button>
+          </div>
+        </div>
+
         <div class="slider-row">
           <label for="fire-volume">
             <span class="slider-icon" aria-hidden="true">🔥</span>
@@ -184,7 +198,7 @@
             <span class="slider-name">Ambience</span>
             <output id="ambience-volume-out" for="ambience-volume">45%</output>
           </label>
-          <input id="ambience-volume" class="range" type="range" min="0" max="100" value="45" aria-label="Ambient wind and room volume" />
+          <input id="ambience-volume" class="range" type="range" min="0" max="100" value="45" aria-label="Ambient layers volume" />
         </div>
         <div class="slider-row">
           <label for="master-volume">
@@ -195,7 +209,7 @@
           <input id="master-volume" class="range" type="range" min="0" max="100" value="80" aria-label="Master volume" />
         </div>
 
-        <p class="fineprint">Synthesized live in your browser — filtered noise, wood pops &amp; a low hearth rumble. No audio files.</p>
+        <p class="fineprint">Sound is on by default and wakes on your first touch. Toggle layers to build a mix; each scene remembers your choices. Synthesized live — no audio files.</p>
       </section>
 
       <section class="panel data-panel glass" aria-labelledby="log-heading">

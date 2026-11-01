@@ -1,9 +1,10 @@
 {
   "schema": "opencode.build-state/v1",
+  "app_version": "1.1.0",
   "project": {
     "name": "Hearth & Home 3D: Cozy Fireplace & Study Sanctuary",
-    "app_version": "1.0.0",
     "repository": "https://github.com/somphol/hearth-and-home-3d",
+    "live_demo": "https://somphol.github.io/hearth-and-home-3d/",
     "working_directory": "/Users/somphol",
     "stack": [
       "HTML5",
@@ -13,8 +14,8 @@
       "Web Audio API"
     ]
   },
-  "measured_at": "2026-11-01T08:09:25.465000Z",
-  "summary": "Built in 33m 13s with 569,993 non-cached tokens (25,979,913 tokens processed including 25,409,920 cache reads) using deepseek-v4.1-flash in OpenCode 2.2.5.",
+  "measured_at": "2026-11-01T23:13:07.497000Z",
+  "summary": "Hearth & Home 3D v1.1.0: about 1h 7m 4s of estimated active work across the initial build and the auto-sound/sound-layer update, 1,108,043 non-cached tokens (70,594,123 tokens processed including 69,486,080 cache reads), built with deepseek-v4.1-flash in OpenCode 2.2.5.",
   "session": {
     "id": "ses_e69f66e69ffeTOK5yFaNGcVQqy",
     "title": "Hearth & Home 3D sanctuary project",
@@ -25,39 +26,58 @@
     "model": "deepseek-v4.1-flash",
     "model_name": "DeepSeek V4.1 Flash",
     "started_at": "2026-11-01T07:36:11.933000Z",
-    "last_activity_at": "2026-11-01T08:09:05.779000Z",
-    "duration_seconds": 1993,
-    "duration_human": "33m 13s",
-    "cost_usd": 0.0
+    "last_activity_at": "2026-11-01T23:13:07.208000Z",
+    "wall_clock_seconds": 56216,
+    "wall_clock_human": "15h 36m 56s",
+    "active_duration_seconds": 4024,
+    "active_duration_human": "1h 7m 4s",
+    "active_duration_method": "Estimated from session message timestamps; gaps between messages are capped at 300 seconds, excluding long idle periods between milestones.",
+    "cost_usd": 0.0,
+    "initial_build": {
+      "measured_at": "2026-11-01T08:09:25.465000Z",
+      "duration_seconds": 1993,
+      "duration_human": "33m 13s",
+      "non_cached_tokens": 569993,
+      "total_including_cache": 25979913,
+      "note": "Initial feature-complete snapshot at v1.0.0."
+    }
   },
   "tokens": {
-    "input": 369754,
-    "output": 102036,
-    "reasoning": 97135,
-    "cache_read": 25409920,
+    "input": 796077,
+    "output": 146663,
+    "reasoning": 164235,
+    "cache_read": 69486080,
     "cache_write": 1068,
-    "prompt_total": 25780742,
-    "generated_total": 199171,
-    "non_cached_total": 569993,
-    "total_including_cache": 25979913,
-    "note": "Counts are cumulative for this OpenCode session at the measured_at timestamp. total_including_cache = input + output + reasoning + cache_read + cache_write. Cache reads are replayed context and dominate this total; non_cached_total excludes cache_read."
+    "prompt_total": 70283225,
+    "generated_total": 310898,
+    "non_cached_total": 1108043,
+    "total_including_cache": 70594123,
+    "note": "Cumulative for this OpenCode session at measured_at. non_cached_total excludes cache_read; total_including_cache includes all cache traffic."
   },
   "deliverables": {
     "index.html": {
-      "bytes": 13212,
-      "lines": 255
+      "bytes": 15391,
+      "lines": 281
     },
     "style.css": {
-      "bytes": 28745,
-      "lines": 839
+      "bytes": 31253,
+      "lines": 915
     },
     "script.js": {
-      "bytes": 133605,
-      "lines": 3516
+      "bytes": 143227,
+      "lines": 3768
     },
     "README.md": {
-      "bytes": 6407,
-      "lines": 162
+      "bytes": 9850,
+      "lines": 225
+    },
+    "CHANGELOG.md": {
+      "bytes": 1455,
+      "lines": 33
+    },
+    "docs/social-card.png": {
+      "bytes": 526952,
+      "lines": null
     }
   },
   "opencode_state": {
@@ -72,14 +92,14 @@
       "providerID": "opencode-go"
     },
     "time_created": 1793518571933,
-    "time_updated": 1793520545779,
-    "time_busy": 1793518571976,
-    "time_idle": null,
+    "time_updated": 1793574787208,
+    "time_busy": 1793573497723,
+    "time_idle": 1793521006366,
     "cost": 0.0,
-    "tokens_input": 369754,
-    "tokens_output": 102036,
-    "tokens_reasoning": 97135,
-    "tokens_cache_read": 25409920,
+    "tokens_input": 796077,
+    "tokens_output": 146663,
+    "tokens_reasoning": 164235,
+    "tokens_cache_read": 69486080,
     "tokens_cache_write": 1068
   },
   "credits": [
@@ -108,8 +128,10 @@
     }
   ],
   "notes": [
-    "The timer is a snapshot taken when the application was feature-complete and ready to publish.",
-    "Remaining work after this snapshot (README telemetry, git commit, GitHub upload) adds a small amount of usage.",
+    "This snapshot covers v1.1.0 (auto sound, five sound layers, per-scene mixes, and volume controls).",
+    "Active duration is an estimate: message gaps are capped at 5 minutes, so the ~14.6-hour overnight break is excluded.",
+    "The initial v1.0.0 build snapshot (33m 13s) is preserved under session.initial_build.",
+    "Remaining publishing work after this snapshot (final commit, push, and Pages build) adds a small amount of usage.",
     "No external images, audio files, or 3D models are included; all visuals and sounds are procedural."
   ]
 }
