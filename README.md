@@ -139,7 +139,18 @@ Imports are validated and merged by session id, so re-importing the same log nev
 
 ## Build telemetry
 
-This project was created in a single OpenCode session. The exact duration and token usage measured from the session database are recorded in [SESSION_STATE.json](SESSION_STATE.json), including a breakdown of input, output, reasoning, cache reads, and cache writes.
+Measured from the OpenCode session database when the app was feature-complete:
+
+| Metric | Value |
+| --- | --- |
+| Build time | **33m 13s** (1,993 s) |
+| Model | **DeepSeek V4.1 Flash** (`opencode-go/deepseek-v4.1-flash`) |
+| Harness | OpenCode 2.2.5 |
+| Non-cached tokens | **569,993** (input + cache write + output + reasoning) |
+| Total tokens processed | **25,979,913** (includes 25,409,920 cache reads) |
+| Measured at | 2026-11-01T08:09:25.465000Z |
+
+The full machine-readable record — including the raw session fields, per-file deliverable sizes, and credits — is in [SESSION_STATE.json](SESSION_STATE.json). Cache reads are replayed context and are shown separately from fresh work. The final git commit and upload happen after this snapshot, so they add a small amount of usage.
 
 ## Credits
 

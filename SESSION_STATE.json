@@ -1,0 +1,115 @@
+{
+  "schema": "opencode.build-state/v1",
+  "project": {
+    "name": "Hearth & Home 3D: Cozy Fireplace & Study Sanctuary",
+    "app_version": "1.0.0",
+    "repository": "https://github.com/somphol/hearth-and-home-3d",
+    "working_directory": "/Users/somphol",
+    "stack": [
+      "HTML5",
+      "CSS3",
+      "ES6 JavaScript",
+      "Three.js r128",
+      "Web Audio API"
+    ]
+  },
+  "measured_at": "2026-11-01T08:09:25.465000Z",
+  "summary": "Built in 33m 13s with 569,993 non-cached tokens (25,979,913 tokens processed including 25,409,920 cache reads) using deepseek-v4.1-flash in OpenCode 2.2.5.",
+  "session": {
+    "id": "ses_e69f66e69ffeTOK5yFaNGcVQqy",
+    "title": "Hearth & Home 3D sanctuary project",
+    "harness": "OpenCode",
+    "harness_version": "2.2.5",
+    "agent": "build",
+    "provider": "opencode-go",
+    "model": "deepseek-v4.1-flash",
+    "model_name": "DeepSeek V4.1 Flash",
+    "started_at": "2026-11-01T07:36:11.933000Z",
+    "last_activity_at": "2026-11-01T08:09:05.779000Z",
+    "duration_seconds": 1993,
+    "duration_human": "33m 13s",
+    "cost_usd": 0.0
+  },
+  "tokens": {
+    "input": 369754,
+    "output": 102036,
+    "reasoning": 97135,
+    "cache_read": 25409920,
+    "cache_write": 1068,
+    "prompt_total": 25780742,
+    "generated_total": 199171,
+    "non_cached_total": 569993,
+    "total_including_cache": 25979913,
+    "note": "Counts are cumulative for this OpenCode session at the measured_at timestamp. total_including_cache = input + output + reasoning + cache_read + cache_write. Cache reads are replayed context and dominate this total; non_cached_total excludes cache_read."
+  },
+  "deliverables": {
+    "index.html": {
+      "bytes": 13212,
+      "lines": 255
+    },
+    "style.css": {
+      "bytes": 28745,
+      "lines": 839
+    },
+    "script.js": {
+      "bytes": 133605,
+      "lines": 3516
+    },
+    "README.md": {
+      "bytes": 6407,
+      "lines": 162
+    }
+  },
+  "opencode_state": {
+    "session_id": "ses_e69f66e69ffeTOK5yFaNGcVQqy",
+    "project_id": "b20956ee3b250e92e6a1a04eea04c131f43786b5",
+    "title": "Hearth & Home 3D sanctuary project",
+    "directory": "/Users/somphol",
+    "version": "2.2.5",
+    "agent": "build",
+    "model": {
+      "id": "deepseek-v4.1-flash",
+      "providerID": "opencode-go"
+    },
+    "time_created": 1793518571933,
+    "time_updated": 1793520545779,
+    "time_busy": 1793518571976,
+    "time_idle": null,
+    "cost": 0.0,
+    "tokens_input": 369754,
+    "tokens_output": 102036,
+    "tokens_reasoning": 97135,
+    "tokens_cache_read": 25409920,
+    "tokens_cache_write": 1068
+  },
+  "credits": [
+    {
+      "role": "harness",
+      "name": "OpenCode",
+      "version": "2.2.5",
+      "url": "https://opencode.ai"
+    },
+    {
+      "role": "model",
+      "name": "DeepSeek V4.1 Flash",
+      "id": "opencode-go/deepseek-v4.1-flash",
+      "provider": "opencode-go"
+    },
+    {
+      "role": "project direction",
+      "name": "Somphol Boonjing",
+      "url": "https://github.com/somphol"
+    },
+    {
+      "role": "3D engine",
+      "name": "Three.js",
+      "version": "r128",
+      "url": "https://threejs.org"
+    }
+  ],
+  "notes": [
+    "The timer is a snapshot taken when the application was feature-complete and ready to publish.",
+    "Remaining work after this snapshot (README telemetry, git commit, GitHub upload) adds a small amount of usage.",
+    "No external images, audio files, or 3D models are included; all visuals and sounds are procedural."
+  ]
+}
