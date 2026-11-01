@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://somphol.github.io/hearth-and-home-3d/sitemap.xml
