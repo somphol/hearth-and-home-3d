@@ -1,12 +1,21 @@
+<div align="center">
+
+<img src="docs/social-card.png" alt="Hearth & Home 3D — Cozy Fireplace & Study Sanctuary" width="100%" />
+
 # Hearth & Home 3D
 
-### Cozy Fireplace & Study Sanctuary
+**Cozy Fireplace & Study Sanctuary**
 
-A single-page, interactive 3D focus sanctuary: a hand-built stone fireplace with a living particle fire, a synthesized crackling hearth, a Pomodoro ritual, and two quieter places to drift — a sunset ocean and a floating sky archipelago.
+A hand-built stone fireplace, a living particle fire, a synthesized crackling hearth, and a Pomodoro ritual in three cozy environments.
 
-**Live demo:** [somphol.github.io/hearth-and-home-3d](https://somphol.github.io/hearth-and-home-3d/)
+[![Live demo](https://img.shields.io/badge/live_demo-online-fb923c?style=flat-square)](https://somphol.github.io/hearth-and-home-3d/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-fb923c?style=flat-square)](LICENSE)
 
-![Hearth & Home 3D — cozy fireplace](preview-fireplace.jpg)
+**[Try it live →](https://somphol.github.io/hearth-and-home-3d/)**
+
+</div>
+
+---
 
 ## The experience
 
