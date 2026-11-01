@@ -4,6 +4,8 @@
 
 A single-page, interactive 3D focus sanctuary: a hand-built stone fireplace with a living particle fire, a synthesized crackling hearth, a Pomodoro ritual, and two quieter places to drift — a sunset ocean and a floating sky archipelago.
 
+**Live demo:** [somphol.github.io/hearth-and-home-3d](https://somphol.github.io/hearth-and-home-3d/)
+
 ![Hearth & Home 3D — cozy fireplace](preview-fireplace.jpg)
 
 ## The experience
