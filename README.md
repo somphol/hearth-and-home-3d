@@ -214,6 +214,12 @@ documentation fixes alike. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and th
 | Document | Purpose |
 | --- | --- |
 | [README.md](README.md) | Overview, setup, controls, and architecture |
+| [AGENTS.md](AGENTS.md) | Handoff for the next maintainer or AI agent |
+| [docs/REPRODUCTION.md](docs/REPRODUCTION.md) | Rebuild and verification book |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Module map, room layout, lighting, audio graph and algorithms |
+| [docs/TESTING.md](docs/TESTING.md) | Verified test matrix and honest gaps |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | GitHub Pages operations, rollback and troubleshooting |
+| [skills/hearth-and-home-3d/SKILL.md](skills/hearth-and-home-3d/SKILL.md) | Reusable build skill |
 | [CHANGELOG.md](CHANGELOG.md) | Notable changes and release history |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Local workflow, constraints, and pull request checks |
 | [SECURITY.md](SECURITY.md) | Supported versions and private vulnerability reporting |
